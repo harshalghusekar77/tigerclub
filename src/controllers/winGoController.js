@@ -342,7 +342,7 @@ const betWinGo = async (req, res) => {
         money = ?,
         amount = ?,
         fee = ?,
-        \`get\` = ?,
+         \`get\` = ?,
         game = ?,
         bet = ?,
         status = ?,
@@ -524,12 +524,11 @@ const addWinGo = async (game) => {
         if (game == 5) join = 'wingo5';
         if (game == 10) join = 'wingo10';
 
-        const [winGoNow] = await connection.query(`SELECT period FROM wingo WHERE status = 0 AND game = "${join}" ORDER BY id DESC LIMIT 1 `);
+        const [winGoNow] = await connection.query(`SELECT period FROM wingo WHERE status = 0 AND game = ? ORDER BY id DESC LIMIT 1 `, [join]);
         const [setting] = await connection.query('SELECT * FROM `admin` ');
         let period = winGoNow[0].period; // cầu hiện tại
         let amount = Math.floor(Math.random() * 10);
-        const [minPlayers] = await connection.query(`SELECT * FROM minutes_1 WHERE status = 0 AND game = "${join}"`);
-        if (minPlayers.length >= 2) {
+        const [minPlayers] = await connection.query('SELECT * FROM minutes_1 WHERE status = 0 AND game = ?', [join]);        if (minPlayers.length >= 2) {
             const betColumns = [
                 // red_small 
                 { name: 'red_0', bets: ['0', 't', 'd', 'n'] },
@@ -548,11 +547,12 @@ const addWinGo = async (game) => {
             ];
 
             const totalMoneyPromises = betColumns.map(async column => {
-                const [result] = await connection.query(`
-                SELECT SUM(money) AS total_money
-                FROM minutes_1
-                WHERE game = "${join}" AND status = 0 AND bet IN (${column.bets.map(bet => `"${bet}"`).join(',')})
-            `);
+                const [result] = await connection.query(
+                    `SELECT SUM(money) AS total_money
+                     FROM minutes_1
+                     WHERE game = ? AND status = 0 AND bet IN (${column.bets.map(() => '?').join(',')})`,
+                    [join, ...column.bets]
+                );
                 return { name: column.name, total_money: result[0].total_money ? parseInt(result[0].total_money) : 0 };
             });
 
@@ -598,11 +598,12 @@ const addWinGo = async (game) => {
             ];
 
             const categories = await Promise.all(betColumns.map(async column => {
-                const [result] = await connection.query(`
-                    SELECT SUM(money) AS total_money
-                    FROM minutes_1
-                    WHERE game = "${join}" AND status = 0 AND bet IN (${column.bets.map(bet => `"${bet}"`).join(',')})
-                `);
+                const [result] = await connection.query(
+                    `SELECT SUM(money) AS total_money
+                     FROM minutes_1
+                     WHERE game = ? AND status = 0 AND bet IN (?)`,
+                    [join, column.bets]
+                );
                 return { name: column.name, total_money: parseInt(result[0]?.total_money) || 0 };
             }));
 
@@ -639,7 +640,7 @@ const addWinGo = async (game) => {
 
         let newArr = '';
         if (nextResult == '-1') {
-            await connection.execute(`UPDATE wingo SET amount = ?,status = ? WHERE period = ? AND game = "${join}"`, [amount, 1, period]);
+            await connection.execute(`UPDATE wingo SET amount = ?, status = ? WHERE period = ? AND game = ?`, [amount, 1, period, join]);
             newArr = '-1';
         } else {
             let result = '';
@@ -654,7 +655,8 @@ const addWinGo = async (game) => {
                 newArr = newArr.slice(0, -1);
             }
             result = arr[0];
-            await connection.execute(`UPDATE wingo SET amount = ?,status = ? WHERE period = ? AND game = "${join}"`, [result, 1, period]);
+            await connection.execute(`UPDATE wingo SET amount = ?, status = ? WHERE period = ? AND game = ?`, [result, 1, period, join]);
+
         }
         const sql = `INSERT INTO wingo SET 
         period = ?,
