@@ -59,6 +59,7 @@ var pageno = 0;
 var limit = 10;
 var page = 1;
 socket.on("data-server", function (msg) {
+
   if (msg.data[0].game != 'wingo') return;
   $(".Loading").fadeIn(0);
   setTimeout(() => {
@@ -142,6 +143,8 @@ $.ajax({
 
     // Assuming firstGame is defined somewhere in your code
     if (firstGame && firstGame.stage === list_orders[0].period) {
+      console.log("hello world");
+      
         var modal = document.getElementById("myModal");
         modal.style.display = "block";
         var myModalheader = document.getElementById("myModal_header");
